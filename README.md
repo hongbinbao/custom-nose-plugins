@@ -2,7 +2,7 @@ custom-nose-plugins
 ===================
 Extra plugins for the python nose testing framework
 
-* below is the plugins list
+* commands line of plugins:  
 
   * plan-loader  
     ```
