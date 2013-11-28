@@ -16,7 +16,7 @@ Extra plugins for the python nose testing framework
 
   * screen-monitor  
     ```
-    nosetests --with-screen-monitor --job-id id_of_job
+    nosetests --with-screen-monitor --job-id id_of_job --temp-path path_of_snapshots --delete delete_or_not
     ```
   * result-uploader  
     ```
