@@ -18,3 +18,7 @@ Extra plugins for the python nose testing framework
     ```
     nosetests --with-screen-monitor --job-id id_of_job
     ```
+  * result-uploader  
+    ```
+    TODO
+    ```
