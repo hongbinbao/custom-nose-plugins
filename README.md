@@ -5,10 +5,11 @@ plan-loader: generate test suites with the expect order defined in "plan" file
 file-output: output test result including result, snapshot and log of device into "result.txt"
 
 * Dependcy:  
-    https://github.com/hongbinbao/devicewrapper
     ```
     sudo pip install devicewrapper
     ```
+
+    https://github.com/hongbinbao/devicewrapper
 
 * Install:   
     ```
