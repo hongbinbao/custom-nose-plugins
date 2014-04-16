@@ -1,24 +1,32 @@
 custom-nose-plugins
 ===================
-Extra plugins for the python nose testing framework
+Extra 2 plugins for the python nose testing framework.
+plan-loader: generate test suites with the expect order defined in "plan" file
+file-output: output test result including result, snapshot and log of device into "result.txt"
 
-* commands line of plugins:  
+* Dependcy:  
+    ```
+    sudo pip install devicewrapper
+    ```
+
+* Install:   
+    ```
+    sudo pip install customnoseplugins
+    ```
+
+* Usage:  
 
   * plan-loader  
     ```
-    nosetests --with-plan-loader --paln-file path_of_plan --loop number
+    nosetests --with-plan-loader --plan-file-name path_of_plan --plan-loop-number number 
     ```  
 
-  * dut-configer  
+  * file-output  
     ```
-    nosetests --with-dut-configer
+    nosetests --with-file-output 
     ```  
 
-  * screen-monitor  
+  * plan-loader && file-output  
     ```
-    nosetests --with-screen-monitor --job-id id_of_job --temp-path path_of_snapshots --delete delete_or_not
-    ```
-  * result-uploader  
-    ```
-    TODO
-    ```
+    nosetests --with-plan-loader --plan-file-name path_of_plan --plan-loop-number number --with-file-output 
+    ```  
