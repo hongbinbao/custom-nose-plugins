@@ -42,10 +42,7 @@ class CustomTestLoader(nose.loader.TestLoader):
         def yielder():
             for i in names:
                 yield unittest.TestLoader().loadTestsFromName(i)
-        #<unittest.suite.TestSuite tests=[<scripts.testcases.browser.BrowserTest testMethod=testOpenBrowser>]>
         tests = []
-        #for i in yielder():
-        #    tests.append(i)
         return nose.suite.ContextSuiteFactory()(yielder())
 
 class PlanLoaderPlugin(nose.plugins.Plugin):
@@ -63,9 +60,6 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
         """Register commandline options.
         """
         super(PlanLoaderPlugin, self).options(parser, env)
-        #parser.add_option('--stability-test-loader', action='store_true',
-        #                  dest='stability_test_loader', default=False,
-        #                  help="enable stability test loader plugin")
 
         parser.add_option('--plan-file-name', action='store', type='string',metavar="STRING",
                           dest='plan_file', default='plan',
@@ -82,9 +76,6 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
         super(PlanLoaderPlugin, self).configure(options, conf)
         if not self.enabled:
             return
-        #print options
-        #if options.stability_test_loader:
-        #    self.enabled = True
         self.conf = conf
         if options.plan_file:
             self.enabled = True
@@ -117,7 +108,7 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
                     yield k
             n += 1
 
-    def loadTestsFromNames2(self, names, module=None):
+    def TODOloadTestsFromNames2(self, names, module=None):
         """
         replace the way of loading test case using plan file.
         if return lazy zuite. the wrapped method provided by nose will be not work
@@ -129,14 +120,7 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
         def lazy():
             for name in names:
                 yield unittest.TestLoader().loadTestsFromName(name, module)
-                #yield loader.loadTestsFromName(name, module)
-                #tests.append(unittest.TestLoader().loadTestsFromName(name, module))
-        #for name in names:
-        #    tests.append(unittest.TestLoader().loadTestsFromName(name, module))
-        #return (ContextList(tests), [])
-        #return (ContextSuite(lazy), [])
         return (loader.suiteClass(lazy), [])
-        #return (None, lazy())
 
     def loadTestsFromNames(self, names, module=None):
         """
@@ -148,7 +132,6 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
 
 
     def loadTestsFromName(self, name, module=None, discovered=False):
-        #unittest.TestLoader.sortTestMethodsUsing = lambda _, x, y: cmp(y, x)
         return unittest.TestLoader().loadTestsFromName(name, getmodule(name))
 
     def wantModule(self,module):
