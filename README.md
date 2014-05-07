@@ -8,7 +8,7 @@ custom-nose-plugins
 https://github.com/hongbinbao/uiautomatorplug
 
 ### Installation
-    sudo pip install customnoseplugins
+    $pip install customnoseplugins
 
 #### plan-loader
 generate test suites with the expected order defined in "plan" file:
