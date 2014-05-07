@@ -3,9 +3,9 @@ custom-nose-plugins
 2 plugins for the python nose testing framework: plan-loader and file-output
 
 ### Dependcy
-    $pip install devicewrapper
+    $pip install uiautomatorplug
     
-https://github.com/hongbinbao/devicewrapper
+https://github.com/hongbinbao/uiautomatorplug
 
 ### Installation
     sudo pip install customnoseplugins
