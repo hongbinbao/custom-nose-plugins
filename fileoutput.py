@@ -14,7 +14,7 @@ from StringIO import StringIO as p_StringO
 from cStringIO import OutputType as c_StringO
 import traceback
 import datetime
-from devicewrapper.android import device, ExpectException
+from uiautomatorplug.android import device, ExpectException
 
 log = logging.getLogger(__name__)
 '''global log instance'''
