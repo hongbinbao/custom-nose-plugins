@@ -15,8 +15,8 @@ plugins for the python nose testing framework: plan-loader and file-output
     ```
 
 * Usage:  
+  generate test suites with the expect order defined in "plan" file:
   * plan-loader
-    generate test suites with the expect order defined in "plan" file:
     ```
     nosetests --with-plan-loader --plan-file-name path_of_plan --plan-loop-number number 
     ```  
