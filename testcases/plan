@@ -1,0 +1,10 @@
+[tests]
+scripts.testcases.phone.Phone.testCall = 2
+scripts.testcases.browser.Browser.testOpenBrowser = 2
+
+#scripts.testcases.message.MessageTest.testSendMessage1 = 2
+#scripts.testcases.camera.CameraTest.testTakePicture = 3
+#scripts.testcases.wechat.WechatTest.testWechat = 10
+#scripts.testcases.weibo.WeiboTest.testWeibo = 10
+#scripts.testcases.angrybird.AngrybirdTest.testLaunch = 2
+
