@@ -1,8 +1,8 @@
 custom-nose-plugins
 ===================
-plugins for the python nose testing framework.
-  plan-loader: generate test suites with the expect order defined in "plan" file
-  file-output: output test result including result, snapshot and log of device into "result.txt"
+plugins for the python nose testing framework\n
+  plan-loader: generate test suites with the expect order defined in "plan" file\n
+  file-output: output test result including result, snapshot and log of device into "result.txt"\n
 
 * Dependcy:  
     ```
