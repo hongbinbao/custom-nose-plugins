@@ -4,19 +4,21 @@
 import os
 import sys
 import time
-import logging
-import shutil
 import nose
-from commands import getoutput as shell
-from os.path import join, exists
 import json
+import shutil
+import logging
+import datetime
+import traceback
+from tools import AdbCommand
+from os.path import join, exists
 from StringIO import StringIO as p_StringO
 from cStringIO import OutputType as c_StringO
-import traceback
-import datetime
 from uiautomatorplug.android import device, ExpectException
 
+
 log = logging.getLogger(__name__)
+
 '''global log instance'''
 TAG='%s%s%s' % ('-' * 18, 'file output save Plugin', '-' * 18)
 '''global log output tag'''
@@ -32,6 +34,29 @@ FAILURE_SNAPSHOT_NAME = 'failure.png'
 '''default output workspace'''
 #SIZE_OF_FILE = 4096
 '''default size of result file'''
+
+def _isExecutable(exe):
+    '''
+    return True if program is executable.
+    '''
+    return os.path.isfile(exe) and os.access(exe, os.X_OK)
+
+def _findExetuable(program):
+    '''
+    return the absolute path of executable program if the program available.
+    else raise Exception.
+    '''
+    program_path, program_name = os.path.split(program)
+    if program_path:
+        if _isExecutable(program):
+            return program
+    else:
+        for path in os.environ['PATH'].split(os.pathsep):
+            path = path.strip('"')
+            exe_file = os.path.join(path, program)
+            if _isExecutable(exe_file):
+                return exe_file
+    raise Exception(LOCATION_NOT_FOUND_EXCEPTION % program)
 
 def _time():
     '''
@@ -54,16 +79,21 @@ def _save(path):
     '''
     serial = os.environ['ANDROID_SERIAL'] if os.environ.has_key('ANDROID_SERIAL') else None
     #snapshot & system log
+    bridge = _findExetuable('adb')
     if serial:
-        shell('adb -s %s shell screencap /sdcard/%s' % (serial, FAILURE_SNAPSHOT_NAME))
-        shell('adb -s %s pull /sdcard/%s %s' % (serial, FAILURE_SNAPSHOT_NAME, path))
-        shell('adb -s %s logcat -v time -d > %s ' % (serial, join(path, LOG_FILE_NAME)))
+        AdbCommand('%s -s %s shell screencap /sdcard/%s' % (bridge ,serial, FAILURE_SNAPSHOT_NAME)).run()
+        AdbCommand('%s -s %s pull /sdcard/%s %s' % (bridge, serial, FAILURE_SNAPSHOT_NAME, path)).run()
+        output = AdbCommand('%s -s %s logcat -v time -d' % (bridge, serial)).run()
+        with open(join(path, LOG_FILE_NAME), 'w') as o:
+            o.write(output)
     else:
-        shell('adb shell screencap /sdcard/%s' % FAILURE_SNAPSHOT_NAME)
-        shell('adb pull /sdcard/%s %s' % (FAILURE_SNAPSHOT_NAME, path))
-        shell('adb logcat -v time -d > %s ' % join(path, LOG_FILE_NAME))
+        AdbCommand('%s shell screencap /sdcard/%s' % (bridge, FAILURE_SNAPSHOT_NAME)).run()
+        AdbCommand('%s pull /sdcard/%s %s' % (bridge, FAILURE_SNAPSHOT_NAME, path)).run()
+        output = AdbCommand('%s logcat -v time -d ' % bridge).run()
+        with open(join(path, LOG_FILE_NAME), 'w') as o:
+            o.write(output)
 
-def writeResultToFile(output, content):
+def _writeResultToFile(output, content):
     with open(output, 'a') as f:
         f.write('%s%s' % (json.dumps(content), os.linesep))
 
@@ -391,7 +421,7 @@ class FileOutputPlugin(nose.plugins.Plugin):
                                       'trace':_formatOutput(case_dir_name, 'fail', err)
                                       })
             
-        writeResultToFile(self.result_file, self.result_properties)
+        _writeResultToFile(self.result_file, self.result_properties)
 
 
     #remote upload
@@ -410,7 +440,7 @@ class FileOutputPlugin(nose.plugins.Plugin):
                                       'end_at': str(datetime.datetime.now()),
                                       'trace':_formatOutput(case_dir_name, 'error', err)
                                       })
-        writeResultToFile(self.result_file, self.result_properties)
+        _writeResultToFile(self.result_file, self.result_properties)
 
     #remote upload
     def addSuccess(self, test, capt=None):
@@ -423,4 +453,4 @@ class FileOutputPlugin(nose.plugins.Plugin):
 
         self.result_properties.clear()
         self.result_properties.update({'name':case_dir_name, 'result':'pass', 'start_at':str(self.conf.case_start_time), 'end_at': str(datetime.datetime.now())})
-        writeResultToFile(self.result_file, self.result_properties)
+        _writeResultToFile(self.result_file, self.result_properties)
