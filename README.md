@@ -21,4 +21,4 @@ output test result including result, snapshot and log of device into "result.txt
     $nosetests --with-file-output 
 
 #### plan-loader && file-output  
-    $nosetests --with-plan-loader --plan-file-name path_of_plan --plan-loop-number number --with-file-output 
+    $nosetests --with-plan-loader --plan-file-name path_of_plan --plan-loop-number number --with-file-output --verbosity 2
