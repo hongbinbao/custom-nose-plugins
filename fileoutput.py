@@ -19,6 +19,9 @@ from uiautomatorplug.android import device, ExpectException
 
 log = logging.getLogger(__name__)
 
+LOCATION_NOT_FOUND_EXCEPTION = '%s not found.'
+'''error msg if adb not found'''
+
 '''global log instance'''
 TAG='%s%s%s' % ('-' * 18, 'file output save Plugin', '-' * 18)
 '''global log output tag'''
