@@ -9,6 +9,7 @@ import json
 import shutil
 import logging
 import datetime
+import platform
 import traceback
 from tools import AdbCommand
 from os.path import join, exists
@@ -16,13 +17,10 @@ from StringIO import StringIO as p_StringO
 from cStringIO import OutputType as c_StringO
 from uiautomatorplug.android import device, ExpectException
 
-
 log = logging.getLogger(__name__)
-
+'''global log instance'''
 LOCATION_NOT_FOUND_EXCEPTION = '%s not found.'
 '''error msg if adb not found'''
-
-'''global log instance'''
 TAG='%s%s%s' % ('-' * 18, 'file output save Plugin', '-' * 18)
 '''global log output tag'''
 TIME_STAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
@@ -49,6 +47,8 @@ def _findExetuable(program):
     return the absolute path of executable program if the program available.
     else raise Exception.
     '''
+    if platform.system() == "Windows":
+        return program
     program_path, program_name = os.path.split(program)
     if program_path:
         if _isExecutable(program):
@@ -60,6 +60,13 @@ def _findExetuable(program):
             if _isExecutable(exe_file):
                 return exe_file
     raise Exception(LOCATION_NOT_FOUND_EXCEPTION % program)
+
+def _wraptime(dt):
+    sysstr = platform.system()
+    if(sysstr == "Windows"):
+        return str(dt).replace(':', '.')
+    else:
+        return str(dt)
 
 def _time():
     '''
@@ -76,29 +83,63 @@ def _mkdir(path):
         os.makedirs(path)
     return path
 
-def _save(path):
+def _save(path, types='fail'):
     '''
     pull log from device to report folder
     '''
-    serial = os.environ['ANDROID_SERIAL'] if os.environ.has_key('ANDROID_SERIAL') else None
-    #snapshot & system log
-    bridge = _findExetuable('adb')
-    if serial:
-        AdbCommand('%s -s %s shell screencap /sdcard/%s' % (bridge ,serial, FAILURE_SNAPSHOT_NAME)).run()
-        AdbCommand('%s -s %s pull /sdcard/%s %s' % (bridge, serial, FAILURE_SNAPSHOT_NAME, path)).run()
-        output = AdbCommand('%s -s %s logcat -v time -d' % (bridge, serial)).run()
-        with open(join(path, LOG_FILE_NAME), 'w') as o:
-            o.write(output)
-    else:
-        AdbCommand('%s shell screencap /sdcard/%s' % (bridge, FAILURE_SNAPSHOT_NAME)).run()
-        AdbCommand('%s pull /sdcard/%s %s' % (bridge, FAILURE_SNAPSHOT_NAME, path)).run()
-        output = AdbCommand('%s logcat -v time -d ' % bridge).run()
-        with open(join(path, LOG_FILE_NAME), 'w') as o:
-            o.write(output)
+    try:
+        serial = os.environ['ANDROID_SERIAL'] if os.environ.has_key('ANDROID_SERIAL') else None
+        #snapshot & system log
+        bridge = _findExetuable('adb')
+        if serial:
+            if types == 'fail':
+                AdbCommand('%s -s %s shell screencap /sdcard/%s' % (bridge ,serial, FAILURE_SNAPSHOT_NAME)).run()
+                AdbCommand('%s -s %s pull /sdcard/%s %s' % (bridge, serial, FAILURE_SNAPSHOT_NAME, path)).run()
+            output = AdbCommand('%s -s %s logcat -v time -d' % (bridge, serial)).run()
+            with open(join(path, LOG_FILE_NAME), 'w') as o:
+                o.write(output)
+            AdbCommand('%s -s %s pull /data/log/%s %s' % (bridge, serial, 'logcat.log', path)).run()
+            AdbCommand('%s -s %s pull /data/log/%s %s' % (bridge, serial, 'logcat.log.1', path)).run()
+            AdbCommand('%s -s %s pull /data/log/%s %s' % (bridge, serial, 'logcat.log.2', path)).run()
+            AdbCommand('%s -s %s pull /data/log/%s %s' % (bridge, serial, 'logcat.log.3', path)).run()
+        else:
+            if types == 'fail':
+                AdbCommand('%s shell screencap /sdcard/%s' % (bridge, FAILURE_SNAPSHOT_NAME)).run()
+                AdbCommand('%s pull /sdcard/%s %s' % (bridge, FAILURE_SNAPSHOT_NAME, path)).run()
+            output = AdbCommand('%s logcat -v time -d ' % bridge).run()
+            with open(join(path, LOG_FILE_NAME), 'w') as o:
+                o.write(output)
+            AdbCommand('%s pull /data/log/%s %s' % (bridge, 'logcat.log', path)).run()
+            AdbCommand('%s pull /data/log/%s %s' % (bridge, 'logcat.log.1', path)).run()
+            AdbCommand('%s pull /data/log/%s %s' % (bridge, 'logcat.log.2', path)).run()
+            AdbCommand('%s pull /data/log/%s %s' % (bridge, 'logcat.log.3', path)).run()       
+    except:
+        pass
 
 def _writeResultToFile(output, content):
-    with open(output, 'a') as f:
-        f.write('%s%s' % (json.dumps(content), os.linesep))
+    try:
+        with open(output, 'a') as f:
+            f.write('%s%s' % (json.dumps(content), os.linesep))
+    except:
+        pass
+
+def _writeSSPIDToFile(path):
+    try:
+        serial = os.environ['ANDROID_SERIAL'] if os.environ.has_key('ANDROID_SERIAL') else None
+        bridge = _findExetuable('adb')
+        times = '?'
+        system_server_pid = '?'
+        if serial:
+            system_server_pid = AdbCommand('%s -s %s shell \"ps | grep system_server\"' % (bridge, serial)).run().strip().split()[1]
+            times = AdbCommand('%s -s %s shell date' % (bridge, serial)).run().strip()
+        else:
+            system_server_pid = AdbCommand('%s shell \"ps | grep system_server\"' % bridge).run().strip().split()[1]
+            times = AdbCommand('%s shell date' % bridge).run().strip()
+        pid_file = join(path, 'system_server_pid.txt')
+        with open(pid_file, 'a') as f:
+            f.write('%s -> %s' % (times, system_server_pid))
+    except:
+        pass
 
 def _calcScore(frame):
     """Calculates a score for this stack frame, so that can be used as a
@@ -254,14 +295,20 @@ class FileOutputPlugin(nose.plugins.Plugin):
         #assert exists(self.result_file), 'file not found!'
         self.result_properties = {}
 
+    def describeTest(self, test):
+        module_name, class_name, method_name = test.id().split('.')[-3:]
+        return method_name
+
     def begin(self):
         self.test_start_time = getattr(self.conf, 'test_start_time', None)
         if not self.test_start_time:
             self.test_start_time = datetime.datetime.now()
             self.conf.update({'test_start_time': str(self.test_start_time)})
         
-        self._report_path = _mkdir(join(join(self.opt.directory, 'report'), str(self.test_start_time).replace(' ', '_')))
+        self._report_path = _mkdir(join(join(self.opt.directory, 'report'), _wraptime(self.test_start_time).replace(' ', '_')))
         self._all_report_path = _mkdir(join(self._report_path, 'all'))
+        #add 20140925
+        self._pass_report_path = _mkdir(join(self._report_path, 'pass'))
         self._fail_report_path = _mkdir(join(self._report_path, 'fail'))
         self._error_report_path = _mkdir(join(self._report_path, 'error'))
         self._timeout_report_path = _mkdir(join(self._report_path, 'timeout'))
@@ -280,7 +327,8 @@ class FileOutputPlugin(nose.plugins.Plugin):
         device.right_dir_path = join(join(join(os.getcwd(), test.id().split('.')[0]), 'pics'), '%s%s%s'%(module_name, '.', case_dir_name))
         
         tmp = join(os.getcwd(), 'tmp')
-        case_report_dir = _mkdir(join(tmp, '%s%s%s' % (case_dir_name, '@', str(self.conf.case_start_time).replace(' ', '_'))))
+        case_report_dir = _mkdir(join(tmp, '%s%s%s' % (case_dir_name, '@', _wraptime(self.conf.case_start_time).replace(' ', '_'))))
+        _writeSSPIDToFile(case_report_dir)
         device.report_dir_path = case_report_dir
 
     def startTest(self, test):
@@ -293,6 +341,7 @@ class FileOutputPlugin(nose.plugins.Plugin):
             self.conf.update({'case_start_time': case_start_time})
         if self.write_hashes:
             sys.stderr.write('%s%s' % (str(case_start_time), ' '))
+        
 
     def stopTest(self, test):
         """
@@ -318,7 +367,7 @@ class FileOutputPlugin(nose.plugins.Plugin):
         method_name = test.id().split('.')[-1]
         case_dir_name = '%s%s%s' % (class_name, '.', method_name)
         case_start_time = self.conf.case_start_time
-        case_report_dir_name = '%s%s%s' % (case_dir_name, '@', str(case_start_time).replace(' ', '_'))
+        case_report_dir_name = '%s%s%s' % (case_dir_name, '@', _wraptime(case_start_time).replace(' ', '_'))
         case_report_dir_path = join(self._fail_report_path, case_report_dir_name)
         screenshot_at_failure = None
         log = None
@@ -331,9 +380,15 @@ class FileOutputPlugin(nose.plugins.Plugin):
             name, ext = os.path.splitext(snapshot_name)
             dest = os.path.dirname(current)
             expect_snapshot_name = '%s%s%s' % (name, '_expect', ext)
-            shutil.copyfile(expect, join(dest, expect_snapshot_name))
-            _save(dest)
-            shutil.move(dest, self._fail_report_path)
+            try:
+                shutil.copyfile(expect, join(dest, expect_snapshot_name))
+            except:
+                pass
+            #remove 20160808 _save(dest)
+            try:
+                shutil.move(dest, self._fail_report_path)
+            except:
+                pass
             #"screenshot_at_failure"
             screenshot_at_failure = join(case_report_dir_path, snapshot_name)
             log = join(case_report_dir_path, LOG_FILE_NAME)
@@ -344,8 +399,11 @@ class FileOutputPlugin(nose.plugins.Plugin):
             tmp = join(os.getcwd(), 'tmp')
             case_report_dir = _mkdir(join(tmp, case_report_dir_name))
             #last step snapshot
-            _save(case_report_dir)
-            shutil.move(case_report_dir, self._fail_report_path)
+            #remove 20160808 _save(case_report_dir)
+            try:
+                shutil.move(case_report_dir, self._fail_report_path)
+            except:
+                pass
 
             screenshot_at_failure = join(case_report_dir_path, FAILURE_SNAPSHOT_NAME)
             log = join(case_report_dir_path, LOG_FILE_NAME)
@@ -367,7 +425,7 @@ class FileOutputPlugin(nose.plugins.Plugin):
         method_name = test.id().split('.')[-1]
         case_dir_name = '%s%s%s' % (class_name, '.', method_name)
         case_start_time = self.conf.case_start_time
-        case_report_dir_name = '%s%s%s' % (case_dir_name, '@', str(case_start_time).replace(' ', '_'))
+        case_report_dir_name = '%s%s%s' % (case_dir_name, '@', _wraptime(case_start_time).replace(' ', '_'))
         case_report_dir_path = join(self._error_report_path, case_report_dir_name)
 
         screenshot_at_failure = None
@@ -381,9 +439,15 @@ class FileOutputPlugin(nose.plugins.Plugin):
             name, ext = os.path.splitext(snapshot_name)
             dest = os.path.dirname(current)
             expect_snapshot_name = '%s%s%s' % (name, '_expect', ext)
-            shutil.copyfile(expect, join(dest, expect_snapshot_name))
-            _save(dest)
-            shutil.move(dest, self._error_report_path)
+            try:
+                shutil.copyfile(expect, join(dest, expect_snapshot_name))
+            except:
+                pass
+            #remove 20160808 _save(dest)
+            try:
+                shutil.move(dest, self._error_report_path)
+            except:
+                pass
             #"screenshot_at_failure"
             screenshot_at_failure = join(case_report_dir_path, snapshot_name)
             log = join(case_report_dir_path, LOG_FILE_NAME)
@@ -394,9 +458,11 @@ class FileOutputPlugin(nose.plugins.Plugin):
             tmp = join(os.getcwd(), 'tmp')
             case_report_dir = _mkdir(join(tmp, case_report_dir_name))
             #last step snapshot
-            _save(case_report_dir)
-            shutil.move(case_report_dir, self._error_report_path)
-
+            #remove 20160808 _save(case_report_dir)
+            try:
+                shutil.move(case_report_dir, self._error_report_path)
+            except:
+                pass
             screenshot_at_failure = join(case_report_dir_path, FAILURE_SNAPSHOT_NAME)
             log = join(case_report_dir_path, LOG_FILE_NAME)
             expect = None
@@ -453,6 +519,21 @@ class FileOutputPlugin(nose.plugins.Plugin):
         class_name = test.id().split('.')[-2]
         method_name = test.id().split('.')[-1]
         case_dir_name = '%s%s%s' % (class_name, '.', method_name)
+        #add 20140925
+        case_start_time = self.conf.case_start_time
+        case_report_dir_name = '%s%s%s' % (case_dir_name, '@', _wraptime(case_start_time).replace(' ', '_'))
+        case_report_dir_path = join(self._pass_report_path, case_report_dir_name)
+        try:
+            tmp = join(os.getcwd(), 'tmp')
+            case_report_dir = _mkdir(join(tmp, case_report_dir_name))
+            #last step snapshot
+            #remove 20160808 _save(case_report_dir, 'pass')
+        except:
+            pass
+        try:
+            shutil.move(case_report_dir, self._pass_report_path)
+        except:
+            pass
 
         self.result_properties.clear()
         self.result_properties.update({'name':case_dir_name, 'result':'pass', 'start_at':str(self.conf.case_start_time), 'end_at': str(datetime.datetime.now())})

@@ -18,8 +18,8 @@ module for loading test suite from config file and injecting timeout check in ca
 
 log = logging.getLogger(__name__)
 
-
-def timeout(timeout=180):
+#default should be long more
+def timeout(timeout=2400):
     '''
     decorator for tiemout
     '''
@@ -130,13 +130,13 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
         n = 1
         while n <= int(cycle): 
             for (k,v) in tests:
-                for i in range(int(v)):
+                for i in xrange(int(v)):
                     yield k
             n += 1
 
     def prepareTestLoader(self, loader):
         """
-        support order in test suite.
+        support order in test suite. 
         """
         self.loader = loader
         def func_wrapper(func):
