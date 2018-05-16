@@ -94,7 +94,7 @@ def _save(path, types='fail'):
         if serial:
             if types == 'fail':
                 AdbCommand('%s -s %s shell screencap /sdcard/%s' % (bridge ,serial, FAILURE_SNAPSHOT_NAME)).run()
-                AdbCommand('%s -s %s pull /sdcard/%s %s' % (bridge, serial, FAILURE_SNAPSHOT_NAME, path)).run()
+                AdbCommand('%s -s %s pull /sdcard/%s \"%s\"' % (bridge, serial, FAILURE_SNAPSHOT_NAME, path)).run()
             output = AdbCommand('%s -s %s logcat -v time -d' % (bridge, serial)).run()
             with open(join(path, LOG_FILE_NAME), 'w') as o:
                 o.write(output)
@@ -105,7 +105,7 @@ def _save(path, types='fail'):
         else:
             if types == 'fail':
                 AdbCommand('%s shell screencap /sdcard/%s' % (bridge, FAILURE_SNAPSHOT_NAME)).run()
-                AdbCommand('%s pull /sdcard/%s %s' % (bridge, FAILURE_SNAPSHOT_NAME, path)).run()
+                AdbCommand('%s pull /sdcard/%s \"%s\"' % (bridge, FAILURE_SNAPSHOT_NAME, path)).run()
             output = AdbCommand('%s logcat -v time -d ' % bridge).run()
             with open(join(path, LOG_FILE_NAME), 'w') as o:
                 o.write(output)
@@ -384,7 +384,9 @@ class FileOutputPlugin(nose.plugins.Plugin):
                 shutil.copyfile(expect, join(dest, expect_snapshot_name))
             except:
                 pass
-            #remove 20160808 _save(dest)
+            #remove 20160808 
+            print 'failure path', dest
+            _save(dest)
             try:
                 shutil.move(dest, self._fail_report_path)
             except:
@@ -399,7 +401,9 @@ class FileOutputPlugin(nose.plugins.Plugin):
             tmp = join(os.getcwd(), 'tmp')
             case_report_dir = _mkdir(join(tmp, case_report_dir_name))
             #last step snapshot
-            #remove 20160808 _save(case_report_dir)
+            #remove 20160808
+            print 'failure path', case_report_dir
+            _save(case_report_dir)
             try:
                 shutil.move(case_report_dir, self._fail_report_path)
             except:
@@ -409,6 +413,7 @@ class FileOutputPlugin(nose.plugins.Plugin):
             log = join(case_report_dir_path, LOG_FILE_NAME)
             expect = None
 
+        print 'failure_image_path=', screenshot_at_failure
         self.result_properties.update({'screenshot_at_failure': _relativePath(self.opt.directory, screenshot_at_failure),
                                        'log': _relativePath(self.opt.directory, log),
                                        'expect': _relativePath(self.opt.directory, expect)
@@ -443,7 +448,8 @@ class FileOutputPlugin(nose.plugins.Plugin):
                 shutil.copyfile(expect, join(dest, expect_snapshot_name))
             except:
                 pass
-            #remove 20160808 _save(dest)
+            #remove 20160808 
+            _save(dest)
             try:
                 shutil.move(dest, self._error_report_path)
             except:
@@ -458,7 +464,8 @@ class FileOutputPlugin(nose.plugins.Plugin):
             tmp = join(os.getcwd(), 'tmp')
             case_report_dir = _mkdir(join(tmp, case_report_dir_name))
             #last step snapshot
-            #remove 20160808 _save(case_report_dir)
+            #remove 20160808 
+            _save(case_report_dir)
             try:
                 shutil.move(case_report_dir, self._error_report_path)
             except:
@@ -467,6 +474,7 @@ class FileOutputPlugin(nose.plugins.Plugin):
             log = join(case_report_dir_path, LOG_FILE_NAME)
             expect = None
 
+        print 'failure_image_path=', screenshot_at_failure
         self.result_properties.update({'screenshot_at_failure': _relativePath(self.opt.directory, screenshot_at_failure),
                                        'log': _relativePath(self.opt.directory, log),
                                        'expect': _relativePath(self.opt.directory, expect)
@@ -527,7 +535,8 @@ class FileOutputPlugin(nose.plugins.Plugin):
             tmp = join(os.getcwd(), 'tmp')
             case_report_dir = _mkdir(join(tmp, case_report_dir_name))
             #last step snapshot
-            #remove 20160808 _save(case_report_dir, 'pass')
+            #remove 20160808 
+            _save(case_report_dir, 'pass')
         except:
             pass
         try:
