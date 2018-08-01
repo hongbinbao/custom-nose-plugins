@@ -341,6 +341,13 @@ class FileOutputPlugin(nose.plugins.Plugin):
             self.conf.update({'case_start_time': case_start_time})
         if self.write_hashes:
             sys.stderr.write('%s%s' % (str(case_start_time), ' '))
+        try:
+            setattr(test, 'failure_image', FAILURE_SNAPSHOT_NAME)
+            setattr(test, 'case_start_time', case_start_time)
+            setattr(test, 'case_fail_dir', self._fail_report_path)
+            setattr(test, 'case_error_dir', self._error_report_path)
+        except:
+            pass
         
 
     def stopTest(self, test):
@@ -413,7 +420,6 @@ class FileOutputPlugin(nose.plugins.Plugin):
             log = join(case_report_dir_path, LOG_FILE_NAME)
             expect = None
 
-        print 'failure_image_path=', screenshot_at_failure
         self.result_properties.update({'screenshot_at_failure': _relativePath(self.opt.directory, screenshot_at_failure),
                                        'log': _relativePath(self.opt.directory, log),
                                        'expect': _relativePath(self.opt.directory, expect)
@@ -474,7 +480,6 @@ class FileOutputPlugin(nose.plugins.Plugin):
             log = join(case_report_dir_path, LOG_FILE_NAME)
             expect = None
 
-        print 'failure_image_path=', screenshot_at_failure
         self.result_properties.update({'screenshot_at_failure': _relativePath(self.opt.directory, screenshot_at_failure),
                                        'log': _relativePath(self.opt.directory, log),
                                        'expect': _relativePath(self.opt.directory, expect)
